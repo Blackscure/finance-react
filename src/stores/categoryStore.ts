@@ -26,12 +26,13 @@ export const useCategoryStore = create<CategoryState>()(
       fetchCategories: async () => {
         try {
           set({ isLoading: true, error: null });
-
+      
           const token = useAuthStore.getState().token;
-          const response = await api.get<Category[]>('/finance/categories/', token);
-
+          const response = await api.get<any>('/finance/categories/', token);
+      
           if (response.success && response.data) {
-            set({ categories: response.data, isLoading: false });
+            const categories = response.data.data; // extract actual list
+            set({ categories, isLoading: false });
           } else {
             throw new Error(response.error || 'Failed to fetch categories');
           }
@@ -42,6 +43,7 @@ export const useCategoryStore = create<CategoryState>()(
           toast.error(message);
         }
       },
+      
 
       addCategory: async (name: string) => {
         try {
