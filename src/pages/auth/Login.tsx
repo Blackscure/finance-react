@@ -1,30 +1,42 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { PieChart, Lock, Mail } from 'lucide-react';
-import { useAuthStore } from '../../stores/authStore';
+import axios from 'axios';
+import { PieChart, Lock, User } from 'lucide-react';
 import { useThemeStore } from '../../stores/themeStore';
 
 const Login: React.FC = () => {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
-  const { login } = useAuthStore();
+
   const { theme, toggleTheme } = useThemeStore();
   const navigate = useNavigate();
-  
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
-    
+
     try {
-      await login(email, password);
-      navigate('/dashboard');
-    } catch (error) {
-      if (error instanceof Error) {
-        setError(error.message);
+      const response = await axios.post('http://localhost:8000/apps/finance-tracker/api/v1/authentication/login/', {
+        username,
+        password,
+      });
+
+      console.log('====================> Login successful:', response.data);
+
+      if (response.data.success) {
+        localStorage.setItem('token', response.data.token);
+        // Reload the page on successful login
+        window.location.reload();
+      } else {
+        setError('Login failed. Please try again.');
+      }
+
+    } catch (error: any) {
+      if (error.response && error.response.data && error.response.data.detail) {
+        setError(error.response.data.detail);
       } else {
         setError('Login failed. Please try again.');
       }
@@ -32,7 +44,7 @@ const Login: React.FC = () => {
       setLoading(false);
     }
   };
-  
+
   return (
     <div className="min-h-screen flex flex-col justify-center sm:px-6 lg:px-8 bg-gradient-to-br from-blue-50 to-gray-100 dark:from-gray-900 dark:to-blue-950">
       <div className="absolute top-4 right-4">
@@ -52,7 +64,7 @@ const Login: React.FC = () => {
           )}
         </button>
       </div>
-      
+
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
           <div className="h-12 w-12 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center">
@@ -69,7 +81,7 @@ const Login: React.FC = () => {
           </Link>
         </p>
       </div>
-      
+
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white dark:bg-gray-800 py-8 px-4 shadow sm:rounded-lg sm:px-10">
           {error && (
@@ -77,34 +89,30 @@ const Login: React.FC = () => {
               {error}
             </div>
           )}
-          
+
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
-              <label htmlFor="email" className="form-label">
-                Email address
-              </label>
+              <label htmlFor="username" className="form-label">Username</label>
               <div className="mt-1 relative rounded-md shadow-sm">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="h-5 w-5 text-gray-400" />
+                  <User className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
+                  id="username"
+                  name="username"
+                  type="text"
+                  autoComplete="username"
                   required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
                   className="form-input pl-10"
-                  placeholder="you@example.com"
+                  placeholder="johndoe"
                 />
               </div>
             </div>
-            
+
             <div>
-              <label htmlFor="password" className="form-label">
-                Password
-              </label>
+              <label htmlFor="password" className="form-label">Password</label>
               <div className="mt-1 relative rounded-md shadow-sm">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Lock className="h-5 w-5 text-gray-400" />
@@ -122,7 +130,7 @@ const Login: React.FC = () => {
                 />
               </div>
             </div>
-            
+
             <div>
               <button
                 type="submit"
