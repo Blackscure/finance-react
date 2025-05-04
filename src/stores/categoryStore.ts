@@ -1,10 +1,15 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Category } from '../types';
 import toast from 'react-hot-toast';
+import { Category } from '../types';
+import { api } from '../utils/api';
+import { useAuthStore } from './authStore';
+import { useTransactionStore } from './transactionStore';
 
 interface CategoryState {
   categories: Category[];
+  currentPage: number;
+  totalPages: number;
   isLoading: boolean;
   error: string | null;
   fetchCategories: () => Promise<void>;
@@ -13,147 +18,107 @@ interface CategoryState {
   deleteCategory: (id: number) => Promise<void>;
 }
 
-// Initial demo data
-const initialCategories: Category[] = [
-  { id: 1, name: 'Food & Drinks' },
-  { id: 2, name: 'Transportation' },
-  { id: 3, name: 'Housing' },
-  { id: 4, name: 'Entertainment' },
-  { id: 5, name: 'Utilities' },
-  { id: 6, name: 'Healthcare' },
-  { id: 7, name: 'Salary' },
-  { id: 8, name: 'Investments' }
-];
-
 export const useCategoryStore = create<CategoryState>()(
   persist(
     (set, get) => ({
-      categories: initialCategories,
+      categories: [],
+      currentPage: 1,
+      totalPages: 1,
       isLoading: false,
       error: null,
-      
-      fetchCategories: async () => {
+
+      fetchCategories: async (page = 1) => {
         try {
           set({ isLoading: true, error: null });
-          
-          // In a real app, this would be an API call
-          // For this demo, we'll use the stored categories
-          
-          // Simulate API delay
-          await new Promise(resolve => setTimeout(resolve, 500));
-          
-          // Categories are already set by the store
-          set({ isLoading: false });
-        } catch (error) {
-          if (error instanceof Error) {
-            set({ error: error.message, isLoading: false });
+    
+          const token = useAuthStore.getState().token;
+          const response = await api.get<any>(`/finance/categories/?page=${page}`, token);
+    
+          if (response.success && response.data) {
+            const { data, current_page, pages } = response.data;
+            set({
+              categories: data,
+              currentPage: current_page,
+              totalPages: pages,
+              isLoading: false,
+            });
           } else {
-            set({ error: 'Failed to fetch categories', isLoading: false });
+            throw new Error(response.error || 'Failed to fetch categories');
           }
+        } catch (error) {
+          const message =
+            error instanceof Error ? error.message : 'Failed to fetch categories';
+          set({ error: message, isLoading: false });
+          toast.error(message);
         }
       },
       
+
       addCategory: async (name: string) => {
         try {
           set({ isLoading: true, error: null });
-          
-          // In a real app, this would be an API call
-          // For this demo, we'll just add to the stored categories
-          
-          // Simulate API delay
-          await new Promise(resolve => setTimeout(resolve, 300));
-          
-          const newCategory: Category = {
-            id: Math.max(0, ...get().categories.map(cat => cat.id)) + 1,
-            name
-          };
-          
-          set(state => ({
-            categories: [...state.categories, newCategory],
-            isLoading: false
-          }));
-          
-          toast.success('Category added successfully');
-        } catch (error) {
-          if (error instanceof Error) {
-            set({ error: error.message, isLoading: false });
-            toast.error(error.message);
+      
+          const token = useAuthStore.getState().token;
+          const response = await api.post<{ name: string }, any>(
+            '/finance/categories/',
+            { name },
+            token
+          );
+      
+          if (response.data.success) {
+            toast.success(response.data.message || 'Category added successfully');
           } else {
-            set({ error: 'Failed to add category', isLoading: false });
-            toast.error('Failed to add category');
+            throw new Error(response.data.message || 'Failed to add category');
           }
+          
+          set({ isLoading: false });
+        } catch (error) {
+          const message =
+            error instanceof Error ? error.message : 'Failed to add category';
+          set({ error: message, isLoading: false });
+          toast.error(message);
         }
       },
+      
       
       updateCategory: async (id: number, name: string) => {
         try {
           set({ isLoading: true, error: null });
-          
-          // In a real app, this would be an API call
-          // For this demo, we'll just update the stored categories
-          
-          // Simulate API delay
-          await new Promise(resolve => setTimeout(resolve, 300));
-          
-          set(state => ({
-            categories: state.categories.map(category => 
-              category.id === id ? { ...category, name } : category
-            ),
-            isLoading: false
-          }));
-          
-          toast.success('Category updated successfully');
-        } catch (error) {
-          if (error instanceof Error) {
-            set({ error: error.message, isLoading: false });
-            toast.error(error.message);
+
+          const response = await api.put<{ name: string }, Category>(
+            `/finance/categories/${id}/`,
+            { name }
+          );
+
+          if (response.success && response.data) {
+            set((state) => ({
+              categories: state.categories.map((category) =>
+                category.id === id ? response.data : category
+              ),
+              isLoading: false,
+            }));
+            toast.success(response.message || 'Category updated successfully');
           } else {
-            set({ error: 'Failed to update category', isLoading: false });
-            toast.error('Failed to update category');
+            throw new Error(response.error || 'Failed to update category');
           }
+        } catch (error) {
+          const message =
+            error instanceof Error ? error.message : 'Failed to update category';
+          set({ error: message, isLoading: false });
+          toast.error(message);
         }
       },
-      
+
       deleteCategory: async (id: number) => {
-        try {
-          set({ isLoading: true, error: null });
-          
-          // Check if category is used in any transactions
-          const { transactions } = useTransactionStore.getState();
-          const isCategoryUsed = transactions.some(transaction => transaction.category === id);
-          
-          if (isCategoryUsed) {
-            throw new Error('Cannot delete a category that is used in transactions');
-          }
-          
-          // In a real app, this would be an API call
-          // For this demo, we'll just remove from the stored categories
-          
-          // Simulate API delay
-          await new Promise(resolve => setTimeout(resolve, 300));
-          
-          set(state => ({
-            categories: state.categories.filter(category => category.id !== id),
-            isLoading: false
-          }));
-          
-          toast.success('Category deleted successfully');
-        } catch (error) {
-          if (error instanceof Error) {
-            set({ error: error.message, isLoading: false });
-            toast.error(error.message);
-          } else {
-            set({ error: 'Failed to delete category', isLoading: false });
-            toast.error('Failed to delete category');
-          }
-        }
-      }
+        const token = useAuthStore.getState().token;
+        await api.delete(`/finance/categories/${id}/`, token);
+        // Optionally re-fetch current page
+        const currentPage = useCategoryStore.getState().currentPage;
+        await useCategoryStore.getState().fetchCategories(currentPage);
+      },
     }),
     {
-      name: 'category-storage'
+      name: 'category-storage',
     }
   )
 );
-
-// Import this at the bottom to avoid circular dependencies
-import { useTransactionStore } from './transactionStore';
