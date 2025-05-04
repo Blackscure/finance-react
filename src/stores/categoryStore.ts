@@ -85,9 +85,11 @@ export const useCategoryStore = create<CategoryState>()(
         try {
           set({ isLoading: true, error: null });
 
+          const token = useAuthStore.getState().token; // ✅ Fixed here
           const response = await api.put<{ name: string }, Category>(
             `/finance/categories/${id}/`,
-            { name }
+            { name },
+            token
           );
 
           if (response.success && response.data) {
@@ -108,6 +110,7 @@ export const useCategoryStore = create<CategoryState>()(
           toast.error(message);
         }
       },
+      
 
       deleteCategory: async (id: number) => {
         const token = useAuthStore.getState().token;

@@ -40,6 +40,7 @@ const CategoryForm: React.FC<CategoryFormProps> = ({ categoryId, onClose }) => {
       } else {
         await addCategory(name);
       }
+      await useCategoryStore.getState().fetchCategories();
       onClose();
     } catch (error) {
       if (error instanceof Error) {
