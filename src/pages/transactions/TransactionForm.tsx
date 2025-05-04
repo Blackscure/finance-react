@@ -12,7 +12,7 @@ interface TransactionFormProps {
 const TransactionForm: React.FC<TransactionFormProps> = ({ transactionId, onClose }) => {
   const { transactions, addTransaction, updateTransaction, isLoading } = useTransactionStore();
   const { categories } = useCategoryStore();
-  
+
   const [formData, setFormData] = useState({
     amount: '',
     description: '',
@@ -20,11 +20,10 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ transactionId, onClos
     category: '',
     date: new Date().toISOString().split('T')[0]
   });
-  
+
   const [error, setError] = useState<string | null>(null);
-  
   const isEditing = transactionId !== null;
-  
+
   useEffect(() => {
     if (isEditing) {
       const transaction = transactions.find(t => t.id === transactionId);
@@ -47,44 +46,44 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ transactionId, onClos
       });
     }
   }, [transactionId, transactions, categories, isEditing]);
-  
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
-  
+
   const validateForm = () => {
     if (!formData.amount || parseFloat(formData.amount) <= 0) {
       setError('Amount must be greater than zero');
       return false;
     }
-    
+
     if (!formData.description.trim()) {
       setError('Description is required');
       return false;
     }
-    
+
     if (!formData.category) {
       setError('Category is required');
       return false;
     }
-    
+
     if (!formData.date) {
       setError('Date is required');
       return false;
     }
-    
+
     return true;
   };
-  
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    
+
     if (!validateForm()) {
       return;
     }
-    
+
     try {
       const transactionData: Omit<Transaction, 'id' | 'category_name'> = {
         amount: parseFloat(formData.amount),
@@ -93,13 +92,13 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ transactionId, onClos
         category: parseInt(formData.category),
         date: formData.date
       };
-      
+
       if (isEditing && transactionId !== null) {
         await updateTransaction(transactionId, transactionData);
       } else {
         await addTransaction(transactionData);
       }
-      
+
       onClose();
     } catch (error) {
       if (error instanceof Error) {
@@ -109,7 +108,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ transactionId, onClos
       }
     }
   };
-  
+
   return (
     <div>
       <div className="flex justify-between items-center mb-4">
@@ -124,13 +123,13 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ transactionId, onClos
           <X className="h-5 w-5" />
         </button>
       </div>
-      
+
       {error && (
         <div className="mb-4 p-2 bg-error-50 dark:bg-error-900/20 text-error-700 dark:text-error-400 text-sm rounded-md">
           {error}
         </div>
       )}
-      
+
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
@@ -154,7 +153,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ transactionId, onClos
               />
             </div>
           </div>
-          
+
           <div>
             <label htmlFor="date" className="form-label">Date</label>
             <input
@@ -169,7 +168,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ transactionId, onClos
             />
           </div>
         </div>
-        
+
         <div>
           <label htmlFor="description" className="form-label">Description</label>
           <input
@@ -184,7 +183,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ transactionId, onClos
             required
           />
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label htmlFor="transaction_type" className="form-label">Transaction Type</label>
@@ -201,7 +200,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ transactionId, onClos
               <option value="expense">Expense</option>
             </select>
           </div>
-          
+
           <div>
             <label htmlFor="category" className="form-label">Category</label>
             <select
@@ -230,7 +229,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ transactionId, onClos
             )}
           </div>
         </div>
-        
+
         <div className="flex justify-end space-x-3 pt-2">
           <button
             type="button"
@@ -243,7 +242,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ transactionId, onClos
           <button
             type="submit"
             className="btn-primary"
-            disabled={isLoading || categories.length === 0}
+            disabled={isLoading}
           >
             {isLoading ? 'Saving...' : isEditing ? 'Update Transaction' : 'Add Transaction'}
           </button>
