@@ -1,41 +1,53 @@
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
 import { useCategoryStore } from '../../stores/categoryStore';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import CategoryForm from './CategoryForm';
+import Swal from 'sweetalert2';
+import withReactContent from 'sweetalert2-react-content';
+import toast from 'react-hot-toast';
+
+const MySwal = withReactContent(Swal);
 
 const Categories: React.FC = () => {
-  const { categories, deleteCategory, isLoading } = useCategoryStore();
-  const [isAdding, setIsAdding] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<number | null>(null);
-  const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
+  const {
+    categories,
+    currentPage,
+    totalPages,
+    fetchCategories,
+    deleteCategory,
+    isLoading,
+  } = useCategoryStore();
 
-  const handleEditClick = (id: number) => {
-    setEditingCategory(id);
-    setIsAdding(false);
-  };
+  const [isAdding, setIsAdding] = React.useState(false);
+  const [editingCategory, setEditingCategory] = React.useState<number | null>(null);
+
+  useEffect(() => {
+    fetchCategories(currentPage);
+  }, [currentPage]);
 
   const handleDeleteClick = async (id: number) => {
-    if (deleteConfirm === id) {
+    const result = await MySwal.fire({
+      title: 'Are you sure?',
+      text: 'This action cannot be undone!',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, delete it!',
+    });
+
+    if (result.isConfirmed) {
       try {
-        // Optimistic UI update: Remove the category immediately
-        const updatedCategories = categories.filter(category => category.id !== id);
-        // Update the categories after deletion
         await deleteCategory(id);
+        toast.success('Category deleted successfully');
       } catch (error) {
-        console.error("Error deleting category:", error);
-        // Optionally, revert the optimistic update if deletion fails
-      } finally {
-        // Reset delete confirmation
-        setDeleteConfirm(null);
+        toast.error('Failed to delete category');
       }
-    } else {
-      setDeleteConfirm(id);
     }
   };
 
-  const handleFormClose = () => {
-    setIsAdding(false);
-    setEditingCategory(null);
+  const handlePageChange = (page: number) => {
+    fetchCategories(page);
   };
 
   return (
@@ -56,78 +68,77 @@ const Categories: React.FC = () => {
 
       {(isAdding || editingCategory !== null) && (
         <div className="card">
-          <CategoryForm 
-            categoryId={editingCategory} 
-            onClose={handleFormClose} 
-          />
+          <CategoryForm categoryId={editingCategory} onClose={() => {
+            setIsAdding(false);
+            setEditingCategory(null);
+          }} />
         </div>
       )}
 
-  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-    {/* Check if categories is an array */}
-    {Array.isArray(categories) && categories.length === 0 ? (
-      <div className="text-center text-gray-500 dark:text-gray-400">
-        No Categories. Please click add to create.
-      </div>
-    ) : (
-      // Ensure categories is always an array for mapping
-      (Array.isArray(categories) ? categories : []).map(category => (
-        <div 
-          key={category.id} 
-          className="card hover:border-primary-200 dark:hover:border-primary-800 transition-all duration-200 border-2 border-transparent"
-        >
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              {category.name}
-            </h3>
-
-            <div className="flex space-x-2">
-              <button
-                onClick={() => handleEditClick(category.id)}
-                className="p-1.5 text-gray-500 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
-                aria-label={`Edit ${category.name}`}
-              >
-                <Edit className="h-4 w-4" />
-              </button>
-
-              <button
-                onClick={() => handleDeleteClick(category.id)}
-                className={`p-1.5 ${
-                  deleteConfirm === category.id
-                    ? 'text-error-600 dark:text-error-400 bg-error-50 dark:bg-error-900/20'
-                    : 'text-gray-500 hover:text-error-600 dark:text-gray-400 dark:hover:text-error-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-                } rounded-full transition-colors`}
-                aria-label={deleteConfirm === category.id ? `Confirm delete ${category.name}` : `Delete ${category.name}`}
-                disabled={isLoading}
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
-            </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {categories.length === 0 ? (
+          <div className="text-center text-gray-500 dark:text-gray-400 col-span-full">
+            No Categories. Please click add to create.
           </div>
-        </div>
-      ))
-    )}
+        ) : (
+          categories.map(category => (
+            <div key={category.id} className="card border-2">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-semibold text-white">{category.name}</h3>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setEditingCategory(category.id)}
+                    className="text-orange-500 hover:text-orange-600"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </button>
 
-    {/* Show add category button if no categories */}
-    {Array.isArray(categories) && categories.length === 0 && !isLoading && (
-      <div className="col-span-full card bg-gray-50 dark:bg-gray-800/50 border border-dashed border-gray-300 dark:border-gray-700">
-        <div className="text-center py-6">
-          <p className="text-gray-500 dark:text-gray-400">No categories found. Create your first category.</p>
+                  <button
+                    onClick={() => handleDeleteClick(category.id)}
+                    className="text-red-500 hover:text-red-600"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {totalPages > 1 && (
+        <div className="flex justify-center items-center space-x-2 mt-6">
           <button
-            onClick={() => {
-              setIsAdding(true);
-              setEditingCategory(null);
-            }}
-            className="mt-4 btn-primary"
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            className="px-3 py-1 rounded bg-gray-200 disabled:opacity-50"
           >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Category
+            Previous
+          </button>
+
+          {Array.from({ length: totalPages }, (_, i) => (
+            <button
+              key={i}
+              onClick={() => handlePageChange(i + 1)}
+              className={`px-3 py-1 rounded ${
+                currentPage === i + 1
+                  ? 'bg-primary-600 text-white'
+                  : 'bg-gray-200 text-gray-800'
+              }`}
+            >
+              {i + 1}
+            </button>
+          ))}
+
+          <button
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className="px-3 py-1 rounded bg-gray-200 disabled:opacity-50"
+          >
+            Next
           </button>
         </div>
-      </div>
-    )}
-  </div>
-
+      )}
     </div>
   );
 };
