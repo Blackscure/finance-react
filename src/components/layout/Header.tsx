@@ -12,7 +12,9 @@ const Header: React.FC = () => {
   const handleLogout = () => {
     logout();
     navigate('/login');
+    window.location.reload(); 
   };
+  
   
   return (
     <header className="sticky top-0 z-10 bg-white dark:bg-gray-800 shadow-sm">
