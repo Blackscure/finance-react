@@ -149,7 +149,9 @@ export const useTransactionStore = create<TransactionState>()(
               ),
               isLoading: false
             }));
+      
             get().calculateSummary();
+            await get().fetchTransactions(); // ✅ Fetch updated list
             toast.success(response.message || 'Transaction updated successfully');
           } else {
             throw new Error(response.error || 'Failed to update transaction');
@@ -162,7 +164,7 @@ export const useTransactionStore = create<TransactionState>()(
         }
       },
       
-
+      
       deleteTransaction: async (id) => {
         try {
           set({ isLoading: true, error: null });
