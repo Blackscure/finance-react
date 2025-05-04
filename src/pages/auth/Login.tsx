@@ -22,6 +22,7 @@ const Login: React.FC = () => {
 
     try {
       await login(username, password);
+      window.location.reload(); 
       navigate('/dashboard');
     } catch (err) {
       setError('Invalid username or password');

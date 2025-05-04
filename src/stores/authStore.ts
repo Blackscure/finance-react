@@ -1,9 +1,23 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { AuthState, User } from '../types';
-import { api } from '../utils/api';
 import toast from 'react-hot-toast';
+import { api } from '../utils/api';
 import { API_BASE_URL } from '../utils/api';
+
+export interface User {
+  id: number;
+  username: string;
+  email: string;
+}
+export interface AuthState {
+  user: User | null;
+  token: string | null;
+  isAuthenticated: boolean;
+  login: (username: string, password: string) => Promise<void>;
+  register: (username: string, email: string, password: string, password2: string) => Promise<void>;
+  logout: () => void;
+  logoutAll: () => void;
+}
 
 export const useAuthStore = create<AuthState>()(
   persist(
@@ -21,7 +35,6 @@ export const useAuthStore = create<AuthState>()(
             },
             body: JSON.stringify({ username, password }),
           });
-          
 
           if (!response.ok) {
             const err = await response.json();
@@ -35,7 +48,6 @@ export const useAuthStore = create<AuthState>()(
             id: data.user.id,
             username: data.user.username,
             email: data.user.email,
-           
           };
 
           const token = data.token;
@@ -43,7 +55,7 @@ export const useAuthStore = create<AuthState>()(
           set({
             user: userData,
             token,
-            isAuthenticated: true
+            isAuthenticated: true,
           });
 
           toast.success('Logged in successfully');
@@ -97,12 +109,16 @@ export const useAuthStore = create<AuthState>()(
 
       logoutAll: () => {
         set({ user: null, token: null, isAuthenticated: false });
-        // Optionally make an API call to invalidate all sessions here
         toast.success('Logged out from all devices');
-      }
+      },
     }),
     {
-      name: 'auth-storage'
+      name: 'auth-storage',
+      partialize: (state) => ({
+        user: state.user,
+        token: state.token,
+        isAuthenticated: state.isAuthenticated,
+      }),
     }
   )
 );

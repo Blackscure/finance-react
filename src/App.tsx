@@ -7,12 +7,12 @@ import Dashboard from './pages/Dashboard';
 import Categories from './pages/categories/Categories';
 import Transactions from './pages/transactions/Transactions';
 import Layout from './components/layout/Layout';
-import { useAuthStore } from './stores/authStore'; // Import your store
+import { useAuthStore } from './stores/authStore';
 import { useThemeStore } from './stores/themeStore';
 
 const isAuthenticated = () => {
-  const { isAuthenticated } = useAuthStore.getState(); // Access state from your auth store
-  return isAuthenticated; // Check if the user is authenticated using the store state
+  const { isAuthenticated } = useAuthStore.getState();
+  return isAuthenticated;
 };
 
 function App() {
