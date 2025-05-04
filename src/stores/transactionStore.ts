@@ -54,7 +54,6 @@ export const useTransactionStore = create<TransactionState>()(
         try {
           set({ isLoading: true, error: null });
       
-          // ✅ Correctly get the token from authStore
           const token = useAuthStore.getState().token;
       
           const response = await api.get<ApiResponse<Transaction[]>>(
@@ -91,58 +90,81 @@ export const useTransactionStore = create<TransactionState>()(
       addTransaction: async (transaction) => {
         try {
           set({ isLoading: true, error: null });
-
+      
           const { categories } = useCategoryStore.getState();
+          const token = useAuthStore.getState().token;
+      
           const categoryExists = categories.some(c => c.id === transaction.category);
           if (!categoryExists) {
             throw new Error('Selected category does not exist');
           }
-
-          await new Promise(resolve => setTimeout(resolve, 300));
-
-          const newTransaction: Transaction = {
-            id: Math.max(0, ...get().transactions.map(t => t.id)) + 1,
-            ...transaction
-          };
-
-          set(state => ({
-            transactions: [...state.transactions, newTransaction],
-            isLoading: false
-          }));
-
-          get().calculateSummary();
-          toast.success('Transaction added successfully');
+      
+          const response = await api.post<typeof transaction, any>(
+            '/finance/transactions/',
+            transaction,
+            token
+          );
+      
+          if (response.data && response.status === 201) {
+            toast.success('Transaction added successfully');
+      
+      
+            set({ isLoading: false });
+          } else {
+            throw new Error(response.data?.message || 'Failed to add transaction');
+          }
+      
         } catch (error) {
-          set({ error: 'Failed to add transaction', isLoading: false });
-          toast.error('Failed to add transaction');
+          const message =
+            error instanceof Error ? error.message : 'Failed to add transaction';
+          set({ error: message, isLoading: false });
+          toast.error(message);
         }
       },
+      
+      
 
       updateTransaction: async (id, transaction) => {
         try {
           set({ isLoading: true, error: null });
-
+      
+          const token = useAuthStore.getState().token;
           const { categories } = useCategoryStore.getState();
+      
           const categoryExists = categories.some(c => c.id === transaction.category);
           if (!categoryExists) {
             throw new Error('Selected category does not exist');
           }
-
-          await new Promise(resolve => setTimeout(resolve, 300));
-
-          set(state => ({
-            transactions: state.transactions.map(t => t.id === id ? { ...transaction, id } : t),
-            isLoading: false
-          }));
-
-          get().calculateSummary();
-          toast.success('Transaction updated successfully');
+      
+          const response = await api.put<typeof transaction, Transaction>(
+            `/finance/transactions/${id}/`,
+            transaction,
+            token
+          );
+      
+          if (response.success && response.data) {
+            set(state => ({
+              transactions: state.transactions.map(t =>
+                t.id === id ? response.data : t
+              ),
+              isLoading: false
+            }));
+      
+            get().calculateSummary();
+            await get().fetchTransactions();
+            toast.success(response.message || 'Transaction updated successfully');
+          } else {
+            throw new Error(response.error || 'Failed to update transaction');
+          }
         } catch (error) {
-          set({ error: 'Failed to update transaction', isLoading: false });
-          toast.error('Failed to update transaction');
+          const message =
+            error instanceof Error ? error.message : 'Failed to update transaction';
+          set({ error: message, isLoading: false });
+          toast.error(message);
         }
       },
-
+      
+      
       deleteTransaction: async (id) => {
         try {
           set({ isLoading: true, error: null });

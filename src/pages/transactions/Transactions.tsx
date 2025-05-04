@@ -5,8 +5,6 @@ import { formatCurrency } from '../../utils/formatters';
 import { Plus, Edit, Trash2, Filter } from 'lucide-react';
 import TransactionForm from './TransactionForm';
 
-const ITEMS_PER_PAGE = 10;
-
 const Transactions: React.FC = () => {
   const { transactions, deleteTransaction, isLoading } = useTransactionStore();
   const { categories } = useCategoryStore();
@@ -16,7 +14,7 @@ const Transactions: React.FC = () => {
   const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all');
   const [filterCategory, setFilterCategory] = useState<number | 'all'>('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
+  
   
   const handleEditClick = (id: number) => {
     setEditingTransaction(id);
@@ -28,12 +26,6 @@ const Transactions: React.FC = () => {
       try {
         await deleteTransaction(id);
         setDeleteConfirm(null);
-        
-        // If we delete the last item on the current page, go to previous page
-        const filteredCount = filteredTransactions.length;
-        if (filteredCount === 1 && currentPage > 1) {
-          setCurrentPage(currentPage - 1);
-        }
       } catch (error) {
         // Error is handled in the store
       }
@@ -69,14 +61,9 @@ const Transactions: React.FC = () => {
     })
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   
-  // Calculate pagination
-  const totalPages = Math.ceil(filteredTransactions.length / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const paginatedTransactions = filteredTransactions.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  
   // Reset to first page when filters change
   React.useEffect(() => {
-    setCurrentPage(1);
+    // No pagination logic here anymore
   }, [filterType, filterCategory, searchTerm]);
   
   return (
@@ -136,11 +123,6 @@ const Transactions: React.FC = () => {
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Filter className="h-5 w-5 text-gray-400" />
                 </div>
-                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </div>
               </div>
               
               <div className="relative">
@@ -158,11 +140,6 @@ const Transactions: React.FC = () => {
                 </select>
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Filter className="h-5 w-5 text-gray-400" />
-                </div>
-                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
                 </div>
               </div>
             </div>
@@ -194,8 +171,8 @@ const Transactions: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {paginatedTransactions.length > 0 ? (
-                paginatedTransactions.map(transaction => {
+              {filteredTransactions.length > 0 ? (
+                filteredTransactions.map(transaction => {
                   const category = categories.find(c => c.id === transaction.category);
                   return (
                     <tr key={transaction.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
@@ -226,97 +203,32 @@ const Transactions: React.FC = () => {
                         {formatCurrency(transaction.amount)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex justify-end space-x-3">
-                          <button
-                            onClick={() => handleEditClick(transaction.id)}
-                            className="text-gray-500 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400"
-                            aria-label={`Edit ${transaction.description}`}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </button>
-                          
-                          <button
-                            onClick={() => handleDeleteClick(transaction.id)}
-                            className={`${
-                              deleteConfirm === transaction.id
-                                ? 'text-error-600 dark:text-error-400'
-                                : 'text-gray-500 hover:text-error-600 dark:text-gray-400 dark:hover:text-error-400'
-                            }`}
-                            aria-label={deleteConfirm === transaction.id ? `Confirm delete ${transaction.description}` : `Delete ${transaction.description}`}
-                            disabled={isLoading}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
+                        <button
+                          onClick={() => handleEditClick(transaction.id)}
+                          className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-500 mr-2"
+                        >
+                          <Edit className="h-5 w-5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteClick(transaction.id)}
+                          className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-500"
+                        >
+                          <Trash2 className="h-5 w-5" />
+                        </button>
                       </td>
                     </tr>
                   );
                 })
               ) : (
                 <tr>
-                  <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
-                    {transactions.length === 0
-                      ? 'No transactions found. Create your first transaction.'
-                      : 'No transactions match your filters.'}
+                  <td colSpan={6} className="text-center py-4 text-sm text-gray-500 dark:text-gray-400">
+                    No transactions found.
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
-        
-        {transactions.length === 0 && (
-          <div className="text-center mt-4">
-            <button
-              onClick={() => {
-                setIsAdding(true);
-                setEditingTransaction(null);
-              }}
-              className="btn-primary"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Transaction
-            </button>
-          </div>
-        )}
-        
-        {totalPages > 1 && (
-          <div className="flex justify-center space-x-2 mt-6">
-            <button
-              onClick={() => setCurrentPage(page => Math.max(1, page - 1))}
-              disabled={currentPage === 1}
-              className={`btn-secondary px-3 py-1 ${
-                currentPage === 1 ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
-            >
-              Previous
-            </button>
-            
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-              <button
-                key={page}
-                onClick={() => setCurrentPage(page)}
-                className={`px-3 py-1 rounded-md ${
-                  currentPage === page
-                    ? 'bg-primary-500 text-white'
-                    : 'btn-secondary'
-                }`}
-              >
-                {page}
-              </button>
-            ))}
-            
-            <button
-              onClick={() => setCurrentPage(page => Math.min(totalPages, page + 1))}
-              disabled={currentPage === totalPages}
-              className={`btn-secondary px-3 py-1 ${
-                currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
-            >
-              Next
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );
