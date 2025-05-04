@@ -13,8 +13,6 @@ ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarEle
 const Dashboard: React.FC = () => {
   const { summary, transactions } = useTransactionStore();
   const { categories } = useCategoryStore();
-
-  console.log("==================",categories)
   
   // Calculate category totals for expenses
   const categoryExpenseTotals = transactions
