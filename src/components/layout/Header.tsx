@@ -17,15 +17,19 @@ const Header: React.FC = () => {
   return (
     <header className="sticky top-0 z-10 bg-white dark:bg-gray-800 shadow-sm">
       <div className="px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          <div className="flex items-center">
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-              <span className="bg-gradient-to-r from-blue-500 to-primary-500 bg-clip-text text-transparent">
-                Finance Tracker
-              </span>
-            </h1>
+        <div className="flex justify-between h-16 items-center">
+          <div className="flex items-center space-x-4">
+            {/* Logo Section */}
+            <div className="flex items-center cursor-pointer" onClick={() => navigate('/')}>
+              <img src="/path-to-your-logo.svg" alt="Logo" className="h-8 w-auto" />
+              <h1 className="ml-3 text-xl font-bold text-gray-900 dark:text-white">
+                <span className="bg-gradient-to-r from-blue-500 to-primary-500 bg-clip-text text-transparent">
+                  Finance Tracker
+                </span>
+              </h1>
+            </div>
           </div>
-          
+
           <div className="flex items-center space-x-4">
             <button
               onClick={toggleTheme}

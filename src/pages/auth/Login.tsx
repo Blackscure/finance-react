@@ -1,8 +1,9 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import { PieChart, Lock, User } from 'lucide-react';
 import { useThemeStore } from '../../stores/themeStore';
+import { useAuthStore } from '../../stores/authStore'; // Import your auth store
 
 const Login: React.FC = () => {
   const [username, setUsername] = useState('');
@@ -11,6 +12,7 @@ const Login: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const { theme, toggleTheme } = useThemeStore();
+  const { login } = useAuthStore(); // Destructure login from store
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -19,27 +21,10 @@ const Login: React.FC = () => {
     setLoading(true);
 
     try {
-      const response = await axios.post('http://localhost:8000/apps/finance-tracker/api/v1/authentication/login/', {
-        username,
-        password,
-      });
-
-      console.log('====================> Login successful:', response.data);
-
-      if (response.data.success) {
-        localStorage.setItem('token', response.data.token);
-        // Reload the page on successful login
-        window.location.reload();
-      } else {
-        setError('Login failed. Please try again.');
-      }
-
-    } catch (error: any) {
-      if (error.response && error.response.data && error.response.data.detail) {
-        setError(error.response.data.detail);
-      } else {
-        setError('Login failed. Please try again.');
-      }
+      await login(username, password);
+      navigate('/dashboard');
+    } catch (err) {
+      setError('Invalid username or password');
     } finally {
       setLoading(false);
     }
@@ -85,7 +70,7 @@ const Login: React.FC = () => {
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white dark:bg-gray-800 py-8 px-4 shadow sm:rounded-lg sm:px-10">
           {error && (
-            <div className="mb-4 p-2 bg-error-50 dark:bg-error-900/20 text-error-700 dark:text-error-400 text-sm rounded-md">
+            <div className="mb-4 p-2 bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400 text-sm rounded-md">
               {error}
             </div>
           )}

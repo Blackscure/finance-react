@@ -1,8 +1,9 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useState } from 'react';
-import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
 import { PieChart, User, Mail, Lock } from 'lucide-react';
 import { useThemeStore } from '../../stores/themeStore';
+import { useAuthStore } from '../../stores/authStore';
 import toast from 'react-hot-toast';
 
 const Register: React.FC = () => {
@@ -14,6 +15,7 @@ const Register: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const { theme, toggleTheme } = useThemeStore();
+  const { register } = useAuthStore();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -28,12 +30,7 @@ const Register: React.FC = () => {
     setLoading(true);
 
     try {
-      const response = await axios.post('http://localhost:8000/apps/finance-tracker/api/v1/authentication/register/', {
-        username,
-        email,
-        password,
-        password2,
-      });
+      await register(username, email, password, password2);
 
       toast.success('Account created successfully! Redirecting...', { duration: 3000 });
 
@@ -41,7 +38,7 @@ const Register: React.FC = () => {
         navigate('/login');
       }, 3000);
     } catch (err: any) {
-      const message = err.response?.data?.detail || 'Registration failed. Please try again.';
+      const message = 'Registration failed. Please try again.';
       toast.error(message);
       setError(message);
     } finally {
