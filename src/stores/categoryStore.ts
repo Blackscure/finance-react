@@ -8,6 +8,8 @@ import { useTransactionStore } from './transactionStore';
 
 interface CategoryState {
   categories: Category[];
+  currentPage: number;
+  totalPages: number;
   isLoading: boolean;
   error: string | null;
   fetchCategories: () => Promise<void>;
@@ -20,19 +22,26 @@ export const useCategoryStore = create<CategoryState>()(
   persist(
     (set, get) => ({
       categories: [],
+      currentPage: 1,
+      totalPages: 1,
       isLoading: false,
       error: null,
 
-      fetchCategories: async () => {
+      fetchCategories: async (page = 1) => {
         try {
           set({ isLoading: true, error: null });
-      
+    
           const token = useAuthStore.getState().token;
-          const response = await api.get<any>('/finance/categories/', token);
-      
+          const response = await api.get<any>(`/finance/categories/?page=${page}`, token);
+    
           if (response.success && response.data) {
-            const categories = response.data.data; // extract actual list
-            set({ categories, isLoading: false });
+            const { data, current_page, pages } = response.data;
+            set({
+              categories: data,
+              currentPage: current_page,
+              totalPages: pages,
+              isLoading: false,
+            });
           } else {
             throw new Error(response.error || 'Failed to fetch categories');
           }
@@ -101,32 +110,11 @@ export const useCategoryStore = create<CategoryState>()(
       },
 
       deleteCategory: async (id: number) => {
-        try {
-          set({ isLoading: true, error: null });
-
-          const { transactions } = useTransactionStore.getState();
-          const isCategoryUsed = transactions.some((t) => t.category === id);
-
-          if (isCategoryUsed) {
-            throw new Error('Cannot delete a category that is used in transactions');
-          }
-
-          const response = await api.delete<null>(`/finance/categories/${id}/`);
-          if (response.success) {
-            set((state) => ({
-              categories: state.categories.filter((c) => c.id !== id),
-              isLoading: false,
-            }));
-            toast.success(response.message || 'Category deleted successfully');
-          } else {
-            throw new Error(response.error || 'Failed to delete category');
-          }
-        } catch (error) {
-          const message =
-            error instanceof Error ? error.message : 'Failed to delete category';
-          set({ error: message, isLoading: false });
-          toast.error(message);
-        }
+        const token = useAuthStore.getState().token;
+        await api.delete(`/finance/categories/${id}/`, token);
+        // Optionally re-fetch current page
+        const currentPage = useCategoryStore.getState().currentPage;
+        await useCategoryStore.getState().fetchCategories(currentPage);
       },
     }),
     {
