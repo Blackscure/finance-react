@@ -22,14 +22,7 @@ const Header: React.FC = () => {
         <div className="flex justify-between h-16 items-center">
           <div className="flex items-center space-x-4">
             {/* Logo Section */}
-            <div className="flex items-center cursor-pointer" onClick={() => navigate('/')}>
-              <img src="/path-to-your-logo.svg" alt="Logo" className="h-8 w-auto" />
-              <h1 className="ml-3 text-xl font-bold text-gray-900 dark:text-white">
-                <span className="bg-gradient-to-r from-blue-500 to-primary-500 bg-clip-text text-transparent">
-                  Finance Tracker
-                </span>
-              </h1>
-            </div>
+           
           </div>
 
           <div className="flex items-center space-x-4">
