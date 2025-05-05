@@ -51,39 +51,44 @@ export const useTransactionStore = create<TransactionState>()(
       totalCount: 0,
 
       fetchTransactions: async (page = 1) => {
-        try {
-          set({ isLoading: true, error: null });
+  try {
+    set({ isLoading: true, error: null });
+
+    const token = useAuthStore.getState().token;
+
+    const response = await api.get<ApiResponse<Transaction[]>>(
+      `/finance/transactions/?page=${page}`,
+      token
+    );
+
+    if (response.success) {
+      const { data, count, pages, current_page, links } = response.data;
+
+      // Update pagination details
+      set({
+        transactions: data,
+        totalCount: count,
+        totalPages: pages,
+        currentPage: current_page,
+        isLoading: false,
+        nextPageUrl: links.next,
+        prevPageUrl: links.previous,
+      });
+
+      get().calculateSummary();
+    } else {
+      throw new Error(response.error || 'Failed to fetch transactions');
+    }
+  } catch (error) {
+    set({
+      error: error instanceof Error ? error.message : 'Unknown error',
+      isLoading: false
+    });
+    toast.error(error instanceof Error ? error.message : 'Unknown error');
+  }
+},
+
       
-          const token = useAuthStore.getState().token;
-      
-          const response = await api.get<ApiResponse<Transaction[]>>(
-            `/finance/transactions/?page=${page}`,
-            token
-          );
-      
-          if (response.success) {
-            const { data, count, pages, current_page } = response.data;
-      
-            set({
-              transactions: data,
-              totalCount: count,
-              totalPages: pages,
-              currentPage: current_page,
-              isLoading: false
-            });
-      
-            get().calculateSummary();
-          } else {
-            throw new Error(response.error || 'Failed to fetch transactions');
-          }
-        } catch (error) {
-          set({
-            error: error instanceof Error ? error.message : 'Unknown error',
-            isLoading: false
-          });
-          toast.error(error instanceof Error ? error.message : 'Unknown error');
-        }
-      },
       
       
 
@@ -166,16 +171,21 @@ export const useTransactionStore = create<TransactionState>()(
       
       
       deleteTransaction: async (id) => {
+        const token = useAuthStore.getState().token;
         try {
-          set({ isLoading: true, error: null });
-
-          await new Promise(resolve => setTimeout(resolve, 300));
-
+          // Make the API request to delete the transaction
+          await api.delete(`/finance/transactions/${id}/`, token);
+      
+          // Optionally re-fetch current page
+          const currentPage = useTransactionStore.getState().currentPage;
+          await useTransactionStore.getState().fetchTransactions(currentPage);
+      
+          // Update state
           set(state => ({
             transactions: state.transactions.filter(t => t.id !== id),
             isLoading: false
           }));
-
+      
           get().calculateSummary();
           toast.success('Transaction deleted successfully');
         } catch (error) {
@@ -183,6 +193,7 @@ export const useTransactionStore = create<TransactionState>()(
           toast.error('Failed to delete transaction');
         }
       },
+      
 
       calculateSummary: () => {
         const summary = calculateSummary(get().transactions);
