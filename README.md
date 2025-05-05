@@ -7,7 +7,7 @@
 - ⚛️ React
 - 🔡 TypeScript
 - 🌿 Zustand (state management)
-- 🎨 TailwindCSS *(optional – if included)*
+- 🎨 TailwindCSS 
 - 📦 Vite or Create React App *(based on your setup)*
 
 ## 📂 Project Structure
