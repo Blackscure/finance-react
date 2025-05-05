@@ -15,6 +15,8 @@ const Transactions: React.FC = () => {
   const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all');
   const [filterCategory, setFilterCategory] = useState<number | 'all'>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [startDate, setStartDate] = useState<string>(''); // e.g., '2025-05-01'
+  const [endDate, setEndDate] = useState<string>(''); // e.g., '2025-05-31'
 
   const handleEditClick = (id: number) => {
     setEditingTransaction(id);
@@ -38,7 +40,6 @@ const Transactions: React.FC = () => {
         await deleteTransaction(id);
         Swal.fire('Deleted!', 'The transaction has been deleted.', 'success');
       } catch (error) {
-        // Error is handled in the store
         Swal.fire('Error!', 'Failed to delete the transaction.', 'error');
       }
     }
@@ -55,17 +56,26 @@ const Transactions: React.FC = () => {
     }
   };
 
-  // Reset when filters/search change
+  // Reset when filters/search/date range change
   useEffect(() => {
     fetchTransactions(1); // Reset to first page when filters change
-  }, [filterType, filterCategory, searchTerm, fetchTransactions]);
+  }, [filterType, filterCategory, searchTerm, startDate, endDate, fetchTransactions]);
 
   // Filter transactions
   const filteredTransactions = transactions
     .filter(transaction => {
+      // Type filter
       if (filterType !== 'all' && transaction.transaction_type !== filterType) return false;
+      // Category filter
       if (filterCategory !== 'all' && transaction.category !== filterCategory) return false;
+      // Search filter
       if (searchTerm && !transaction.description.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+      // Date range filter
+      if (startDate || endDate) {
+        const transactionDate = new Date(transaction.date);
+        if (startDate && transactionDate < new Date(startDate)) return false;
+        if (endDate && transactionDate > new Date(endDate)) return false;
+      }
       return true;
     })
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -96,6 +106,7 @@ const Transactions: React.FC = () => {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="form-input pl-10"
+                aria-label="Search transactions by description"
               />
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -110,6 +121,7 @@ const Transactions: React.FC = () => {
                   value={filterType}
                   onChange={(e) => setFilterType(e.target.value as 'all' | 'income' | 'expense')}
                   className="form-input pl-10 pr-10 appearance-none"
+                  aria-label="Filter by transaction type"
                 >
                   <option value="all">All Types</option>
                   <option value="income">Income</option>
@@ -125,6 +137,7 @@ const Transactions: React.FC = () => {
                   value={filterCategory}
                   onChange={(e) => setFilterCategory(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
                   className="form-input pl-10 pr-10 appearance-none"
+                  aria-label="Filter by category"
                 >
                   <option value="all">All Categories</option>
                   {categories.map(category => (
@@ -134,6 +147,23 @@ const Transactions: React.FC = () => {
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Filter className="h-5 w-5 text-gray-400" />
                 </div>
+              </div>
+
+              <div className="flex space-x-2">
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="form-input"
+                  aria-label="Filter by start date"
+                />
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="form-input"
+                  aria-label="Filter by end date"
+                />
               </div>
             </div>
           </div>
@@ -152,7 +182,11 @@ const Transactions: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {filteredTransactions.length > 0 ? (
+              {isLoading ? (
+                <tr>
+                  <td colSpan={6} className="text-center py-4">Loading...</td>
+                </tr>
+              ) : filteredTransactions.length > 0 ? (
                 filteredTransactions.map(transaction => {
                   const category = categories.find(c => c.id === transaction.category);
                   return (
@@ -203,7 +237,6 @@ const Transactions: React.FC = () => {
           </table>
         </div>
 
-        {/* Pagination Controls */}
         {totalPages > 1 && (
           <div className="mt-6 flex items-center justify-between">
             <div className="text-sm text-gray-500 dark:text-gray-400">

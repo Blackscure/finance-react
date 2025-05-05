@@ -2,6 +2,11 @@ import React, { useEffect } from 'react';
 import { useCategoryStore } from '../../stores/categoryStore';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import CategoryForm from './CategoryForm';
+import Swal from 'sweetalert2';
+import withReactContent from 'sweetalert2-react-content';
+import toast from 'react-hot-toast';
+
+const MySwal = withReactContent(Swal);
 
 const Categories: React.FC = () => {
   const {
@@ -15,11 +20,31 @@ const Categories: React.FC = () => {
 
   const [isAdding, setIsAdding] = React.useState(false);
   const [editingCategory, setEditingCategory] = React.useState<number | null>(null);
-  const [deleteConfirm, setDeleteConfirm] = React.useState<number | null>(null);
 
   useEffect(() => {
     fetchCategories(currentPage);
   }, [currentPage]);
+
+  const handleDeleteClick = async (id: number) => {
+    const result = await MySwal.fire({
+      title: 'Are you sure?',
+      text: 'This action cannot be undone!',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, delete it!',
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await deleteCategory(id);
+        toast.success('Category deleted successfully');
+      } catch (error) {
+        toast.error('Failed to delete category');
+      }
+    }
+  };
 
   const handlePageChange = (page: number) => {
     fetchCategories(page);
@@ -61,20 +86,19 @@ const Categories: React.FC = () => {
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-semibold text-white">{category.name}</h3>
                 <div className="flex gap-2">
-                <button 
-                  onClick={() => setEditingCategory(category.id)} 
-                  className="text-orange-500 hover:text-orange-600"
-                >
-                  <Edit className="w-4 h-4" />
-                </button>
+                  <button
+                    onClick={() => setEditingCategory(category.id)}
+                    className="text-orange-500 hover:text-orange-600"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </button>
 
-                <button 
-                  onClick={() => handleDeleteClick(category.id)} 
-                  className="text-red-500 hover:text-red-600"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-
+                  <button
+                    onClick={() => handleDeleteClick(category.id)}
+                    className="text-red-500 hover:text-red-600"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
             </div>
@@ -82,7 +106,6 @@ const Categories: React.FC = () => {
         )}
       </div>
 
-      {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex justify-center items-center space-x-2 mt-6">
           <button
