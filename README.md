@@ -8,7 +8,7 @@
 - 🔡 TypeScript
 - 🌿 Zustand (state management)
 - 🎨 TailwindCSS 
-- 📦 Vite or Create React App *(based on your setup)*
+- 📦 Vite
 
 ## 📂 Project Structure
 
