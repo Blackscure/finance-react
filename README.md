@@ -34,7 +34,9 @@ cd finance-react
 - npm run dev
 
 
+### . Screen shots
 
+Register
 
- 
+ ![image](https://github.com/user-attachments/assets/85bac706-2385-422a-aa76-63427b9220df)
 
